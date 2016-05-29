@@ -8,12 +8,13 @@ var assert = chai.assert;
 mongoose.connect("mongodb://192.168.99.100:27017/db");
 var models = require('../model.js')(mongoose);
 
-var PoliticianSentimentSchema = models.PoliticianSentimentSchema;
-var CandidateArticles = models.CandidateArticles;
-
+var PoliticianSentiment = models.PoliticianSentiment;
+var PoliticianArticleCollection = models.PoliticianArticleCollection;
+var Article = models.Article;
+var Concept = models.Concept;
 // This agent refers to PORT where program is runninng.
 
-models.PoliticianSentiments.remove({}, function(err) {
+PoliticianSentiment.remove({}, function(err) {
   if(err) {
     console.log(err);
   }
@@ -23,8 +24,8 @@ models.PoliticianSentiments.remove({}, function(err) {
 describe("candidate sentiment data",function(){
   var foundCandidate = null;
   it("should store candidate sentiment data",function(){
-    
-    var bSanders = new models.PoliticianSentiments({
+
+    var bSanders = new PoliticianSentiment({
       name: 'Bernie Sanders',
       twitterHandle: 'bsanders',
       averages: { newAvg:0,oldAvg:0},
@@ -40,9 +41,9 @@ describe("candidate sentiment data",function(){
 
   });
 
-  it("should find stored candidate data",function(done) {
+  it("should find stored candidate sentiment data",function(done) {
 
-    models.PoliticianSentiments.find(function (err, candidates) {
+    PoliticianSentiment.find(function (err, candidates) {
       if (err) {
         return console.error(err);
       }
@@ -58,7 +59,7 @@ describe("candidate sentiment data",function(){
     });
   });
 
-  it("should update candidate data", function done() {
+  it("should update candidate sentiment data", function done() {
     assert(foundCandidate != null);
 
     foundCandidate['averages']['newAvg'] = 1;
@@ -67,7 +68,7 @@ describe("candidate sentiment data",function(){
 
     foundCandidate.save();
 
-    models.PoliticianSentiments.find(function (err2, candidates2) {
+    PoliticianSentiment.find(function (err2, candidates2) {
       if (err2) {
         return console.error(err2);
       } else {
@@ -80,33 +81,138 @@ describe("candidate sentiment data",function(){
     });
   });
 
-  it("should remove all candidate data", function done() {
-    models.PoliticianSentiments.remove({}, function(err) {
+  it("should remove all candidate sentiment data", function done() {
+    PoliticianSentiment.remove({}, function(err) {
       if(err) {
 
        new Promise(function(resolve, reject) {
         console.log(err);
         });
       } else {
-
+        PoliticianSentiment.find(function (err, candidates) {
+          if (err) {
+            return console.error(err);
+          }
+          else {
+            assert(candidates.length == 0);
+          }
+        });
+        done();
       }
-      done();
+    });
+  });
+});
+
+
+// var PoliticianArticle = new Schema({
+//   name: String,
+//   twitterHandle: String,
+//   Article: [{
+//     index: String,
+//     links: [String],
+//     reference: String,
+//     summary: String,
+//     title: String,
+//     weight: Number
+//   }],
+//   concepts: [{ concept: String, occurrences: Number}]
+// });
+
+describe("candidate article data", function() {
+  var foundArticle = null;
+  PoliticianArticleCollection.remove({}, function(err){
+    if(err) console.log(err);
+
+  });
+  it("should save candidate article data", function(){
+    var bSanders = new PoliticianArticleCollection({
+      name: "Bernie Sanders",
+      twitterHandle: "bsanders",
+      Article : [],
+      concepts : []
+    }
+    );
+
+    bSanders.save();
+  });
+
+  it("should find saved candidate article data",function(done){
+    PoliticianArticleCollection.find({twitterHandle: "bsanders"}, function(err, Article){
+      if(err){
+        console.log(err);
+      } else {
+        console.log("found "+Article.length+ "Article");
+        assert(Article.length == 1);
+        assert(Article[0]['twitterHandle'] == "bsanders");
+        foundArticle = Article[0];
+        done();
+      }
     });
   });
 
+  it("should update candidate article data", function(done){
+    assert(foundArticle != null);
+    /*
+    {
+    //     index: String,
+    //     links: [String],
+    //     reference: String,
+    //     summary: String,
+    //     title: String,
+    //     weight: Number
+    //   }
+     */
+    article = new Article({
+      index: "foo",
+      links: ["foo","bar"],
+      reference: "goo",
+      summary: "lots of goo",
+      title: "lots of foo",
+      weight: 1234
+    });
+
+    concept = new Concept({
+      concept : "con1",
+      occurrences : 12
+    });
+    foundArticle.articles.set(0,article)
+    foundArticle.concepts.set(0,concept);
+    foundArticle.save();
+    console.log(foundArticle);
+
+    PoliticianArticleCollection.find({twitterHandle: 'bsanders'}, function(err, articles){
+      if(err){
+        console.log(err);
+      } else {
+        console.log("found "+articles.length+ "Article");
+        assert(articles.length == 1);
+        console.log(articles);
+        assert(articles[0]['twitterHandle'] == "bsanders");
+
+        assert(articles[0].articles.length == 1);
+        assert(articles[0].articles[0].index == 'foo');
+        assert(articles[0].concepts.length == 1);
+        assert(articles[0].concepts[0].concept == 'con1');
+
+        done();
+      }
+    });
+  });
+
+  it("should remove all candidate article data", function(done){
+    PoliticianArticleCollection.remove({}, function(err){
+      if(err) console.log(err);
+
+    });
+
+    PoliticianArticleCollection.find({twitterHandle: "bSanders"}, function(err, Article){
+      if(err){
+        console.log(err);
+      } else {
+        assert(Article.length == 0);
+        done();
+      }
+
+    });
+  });
 });
-
-// title: { type: String }
-// , rating: String
-// , releaseYear: Number
-// , hasCreditCookie: Boolean
-
-// var assert = require('chai').assert;
-// describe('Array', function() {
-//   describe('#indexOf()', function () {
-//     it('should return -1 when the value is not present', function () {
-//       assert.equal(-1, [1,2,3].indexOf(5));
-//       assert.equal(-1, [1,2,3].indexOf(0));
-//     });
-//   });
-// });

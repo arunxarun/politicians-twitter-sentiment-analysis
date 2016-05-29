@@ -16,21 +16,32 @@ module.exports = function(mongoose){
     runningAverageWindow1Array: [Number]
   });
 
-  var PoliticianArticle = new Schema({
-    articles: [{
-      index: String,
-      links: [String],
-      reference: String,
-      summary: String,
-      title: String,
-      weight: Number
-    }],
-    concepts: [{ concept: String, occurrences: Number}]
+  var Article = new Schema({
+    index: String,
+    links: [String],
+    reference: String,
+    summary: String,
+    title: String,
+    weight: Number
+  });
+
+  var Concept = new Schema({
+    concept: String,
+    occurrences: Number
+  });
+
+  var PoliticianArticleCollection = new Schema({
+    name: String,
+    twitterHandle: String,
+    articles: [],
+    concepts: []
   });
 
   var models = {
-    PoliticianSentiments : mongoose.model('PoliticianSentiments', PoliticianSentiment),
-    PoliticianArticles : mongoose.model('PoliticianArticles', PoliticianArticle)
+    PoliticianSentiment : mongoose.model('PoliticianSentiment', PoliticianSentiment),
+    Article : mongoose.model('Article',Article),
+    Concept : mongoose.model('Concept',Concept),
+    PoliticianArticleCollection : mongoose.model('PoliticianArticleCollection', PoliticianArticleCollection)
   };
 
   return models;
