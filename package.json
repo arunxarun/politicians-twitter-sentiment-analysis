@@ -1,7 +1,7 @@
 {
   "name": "social_media_mining",
   "version": "1.0.0",
-  "description": "",
+  "description": "This is a 12 factored fork of the original.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,5 +17,13 @@
     "limiter": "^1.1.0",
     "socket.io": "^1.3.7",
     "twitter": "^1.2.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arunxarun/politicians-twitter-sentiment-analysis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arunxarun/politicians-twitter-sentiment-analysis/issues"
+  },
+  "homepage": "https://github.com/arunxarun/politicians-twitter-sentiment-analysis#readme"
 }

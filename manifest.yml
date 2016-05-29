@@ -1,0 +1,7 @@
+name: cf-politicians-twitter-sentiment-analysis
+env:
+ hpe_apikey: REPLACE_WITH_YOUR_KEY
+ consumer_key: REPLACE_WITH_YOUR_KEY
+ consumer_secret: REPLACE_WITH_YOUR_KEY
+ access_token: REPLACE_WITH_YOUR_KEY
+ access_token_secret: REPLACE_WITH_YOUR_KEY

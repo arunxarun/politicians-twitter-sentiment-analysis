@@ -283,6 +283,7 @@ function twitterStream(candidate, candidateData, tweetObject) {
           hodClient.call('addtotextindex', data2, function(err2, resp2, body2) {
             if (resp2) {
               if (resp2.body) {
+                console.log("error adding to text index:" + JSON.stringify(data2));
                 console.log(resp2.body)
               }
             }
@@ -291,6 +292,7 @@ function twitterStream(candidate, candidateData, tweetObject) {
       } else {
         // if (resp.body.error) {console.log(resp.body.error);}
         console.log("------------------");
+        console.log("error calling HOD analyzesentiment.");
         console.log(err);
       }
     });
@@ -339,6 +341,7 @@ function updateCandidateArticles() {
         });
       } else {
         console.log("------------------");
+        console.log("error trying to analyze "+JSON.stringify(data));
         if (resp1.body.error) {console.log(resp1.body.error);}
         console.log(err1);
       }
