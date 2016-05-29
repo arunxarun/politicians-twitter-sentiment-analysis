@@ -4,6 +4,9 @@ var chai = require('chai');
 var expect = chai.expect;
 var should = chai.should;
 var assert = chai.assert;
+var mongo_host = process.env.MONGO_HOST;
+var mongo_port = process.env.MONGO_PORT;
+var mongo_db = process.env.MONGO_DB;
 
 mongoose.connect("mongodb://192.168.99.100:27017/db");
 var models = require('../model.js')(mongoose);
@@ -178,7 +181,7 @@ describe("candidate article data", function() {
     foundArticle.articles.set(0,article)
     foundArticle.concepts.set(0,concept);
     foundArticle.save();
-    console.log(foundArticle);
+    
 
     PoliticianArticleCollection.find({twitterHandle: 'bsanders'}, function(err, articles){
       if(err){
@@ -186,7 +189,7 @@ describe("candidate article data", function() {
       } else {
         console.log("found "+articles.length+ "Article");
         assert(articles.length == 1);
-        console.log(articles);
+
         assert(articles[0]['twitterHandle'] == "bsanders");
 
         assert(articles[0].articles.length == 1);
