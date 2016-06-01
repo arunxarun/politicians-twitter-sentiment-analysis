@@ -9,6 +9,24 @@ var Twitter = require('twitter');
 var havenondemand = require('havenondemand');
 var async = require("async");
 var RateLimiter = require('limiter').RateLimiter;
+var mongoose = require('mongoose');
+
+// TODO: convert this part to use MONGO details from VCAP_SERVICES
+var mongo_host = process.env.MONGO_HOST;
+var mongo_port = process.env.MONGO_PORT;
+var mongo_db = process.env.MONGO_DB;
+
+mongoose.connect("mongodb://192.168.99.100:27017/db2");
+var models = require('./model.js')(mongoose);
+
+var PoliticianSentiment = models.PoliticianSentiment;
+var PoliticianArticleCollection = models.PoliticianArticleCollection;
+var Article = models.Article;
+var Concept = models.Concept;
+
+var datastructs  = require('./datastructs.js')(models);
+var buildCandidateSentimentList = datastructs.buildCandidateSentimentList;
+
 
 var hodClient = new havenondemand.HODClient(process.env.hpe_apikey);
 
@@ -31,58 +49,76 @@ var window1 = 10;
 
 // Data used to store and calculate sentiment for candidates
 // Each key is the candidate's Twitter handle which is checked after a Tweet is streamed in so we know which candidate we're talking about
-var candidateNumbers = {
-  "SenSanders": {
-    averages: {newAvg: 0, oldAvg: 0},
-    n: 0,
-    nPositive: 0,
-    nNegative: 0,
-    nNeutral: 0,
-    runningAverageWindow1: 0,
-    nWindow1: 0,
-    runningAverageWindow1Array: []
-  },
-  "HillaryClinton": {
-    averages: {newAvg: 0, oldAvg: 0},
-    n: 0,
-    nPositive: 0,
-    nNegative: 0,
-    nNeutral: 0,
-    runningAverageWindow1: 0,
-    nWindow1: 0,
-    runningAverageWindow1Array: []
-  },
-  "realDonaldTrump": {
-      averages: {newAvg: 0, oldAvg: 0},
-      n: 0,
-      nPositive: 0,
-      nNegative: 0,
-      nNeutral: 0,
-      runningAverageWindow1: 0,
-      nWindow1: 0,
-      runningAverageWindow1Array: []
-  },
-  "tedcruz": {
-    averages: {newAvg: 0, oldAvg: 0},
-    n: 0,
-    nPositive: 0,
-    nNegative: 0,
-    nNeutral: 0,
-    runningAverageWindow1: 0,
-    nWindow1: 0,
-    runningAverageWindow1Array: []
-  },
-  "JohnKasich": {
-    averages: {newAvg: 0, oldAvg: 0},
-    n: 0,
-    nPositive: 0,
-    nNegative: 0,
-    nNeutral: 0,
-    runningAverageWindow1: 0,
-    nWindow1: 0,
-    runningAverageWindow1Array: []
-  }
-}
+//TODO generate candidate numbers with datastruct functionaltiy. This is async.
+
+// var candidateNumbers = {
+//   "SenSanders": {
+//     averages: {newAvg: 0, oldAvg: 0},
+//     n: 0,
+//     nPositive: 0,
+//     nNegative: 0,
+//     nNeutral: 0,
+//     runningAverageWindow1: 0,
+//     nWindow1: 0,
+//     runningAverageWindow1Array: []
+//   },
+//   "HillaryClinton": {
+//     averages: {newAvg: 0, oldAvg: 0},
+//     n: 0,
+//     nPositive: 0,
+//     nNegative: 0,
+//     nNeutral: 0,
+//     runningAverageWindow1: 0,
+//     nWindow1: 0,
+//     runningAverageWindow1Array: []
+//   },
+//   "realDonaldTrump": {
+//       averages: {newAvg: 0, oldAvg: 0},
+//       n: 0,
+//       nPositive: 0,
+//       nNegative: 0,
+//       nNeutral: 0,
+//       runningAverageWindow1: 0,
+//       nWindow1: 0,
+//       runningAverageWindow1Array: []
+//   },
+//   "tedcruz": {
+//     averages: {newAvg: 0, oldAvg: 0},
+//     n: 0,
+//     nPositive: 0,
+//     nNegative: 0,
+//     nNeutral: 0,
+//     runningAverageWindow1: 0,
+//     nWindow1: 0,
+//     runningAverageWindow1Array: []
+//   },
+//   "JohnKasich": {
+//     averages: {newAvg: 0, oldAvg: 0},
+//     n: 0,
+//     nPositive: 0,
+//     nNegative: 0,
+//     nNeutral: 0,
+//     runningAverageWindow1: 0,
+//     nWindow1: 0,
+//     runningAverageWindow1Array: []
+//   }
+// }
+
+var candidateData = {
+  "SenSanders":"Bernie Sanders",
+  "HillaryClinton":"Hillary Clinton",
+  "realDonaldTrump": "Donald Trump",
+  "tedcruz": "Ted Cruz",
+  "JohnKasich":"John Kasich"
+};
+
+// as this is async, all calls that assume candidateNumbers need to return some kind of default no-op data.
+
+var candidateNumbers = null;
+
+
+
+
 
 var articleUpdateInterval = 60000*15; //15 minutes
 
@@ -94,6 +130,8 @@ var candidateArticles = {
   "Ted Cruz": {articles: [], concepts: []},
   "John Kasich": {articles: [], concepts: []},
 };
+
+//TODO build candidateArticleList repo.
 
 app.get("/", function(req, res) {
   res.render('index', {
@@ -148,6 +186,7 @@ app.get("/contribute", function(req, res) {
 // Route for third party developers to hit if they want the candidate sentiment data
 app.get('/candidatedata', function(req, res) {
   // var payload = candidateNumbers
+  // TODO: return payload as request of all collections, OR all zeros.
   var payload = {candidates: [
     {
       name: "SenSanders",
@@ -203,6 +242,8 @@ app.get('/candidatedata', function(req, res) {
   res.status(200).send(payload)
 })
 
+
+
 http.listen(port, function(){
   console.log("Listening on port: "+port);
 });
@@ -214,8 +255,24 @@ twitterClient.stream('statuses/filter', {track: candidateString}, function(strea
       var userMentions = tweet.entities.user_mentions;
       for (var i=0; i<userMentions.length; i++) {
         var screenName = userMentions[i].screen_name;
-        if (candidateNumbers[screenName] !== undefined) {
-          twitterStream(screenName, candidateNumbers[screenName], tweet)
+        if(candidateNumbers == null) {
+          buildCandidateSentimentList(candidateData,function(err,candidateSentiments){
+            console.log("in callback!");
+            candidateNumbers = candidateSentiments;
+            if (candidateNumbers[screenName] !== undefined) {
+
+
+              PoliticianSentiment.find({twitterHandle: screenName}, function(err,sentiments) {
+                  if(err) {
+                    console.log(err);
+                  } else {
+                    var sentiment = sentiments[0];
+                    //twitterStream(screenName, candidateNumbers[screenName], tweet)
+                    twitterStream(screenName, sentiment, tweet);
+                  }
+              });
+            }
+          });
         }
       }
     }
@@ -260,12 +317,16 @@ function twitterStream(candidate, candidateData, tweetObject) {
             candidateData.runningAverageWindow1Array.splice(0,1);
             candidateData.runningAverageWindow1 = calculateRunningAverageWindow(candidateData.runningAverageWindow1Array, window1)
           }
+
+
+
           //
           candidateData.averages = calculateRunningAverage(score, candidateData.n, candidateData.averages);
           rgbInstantaneous = mapColor(score);
           rgbAverage = mapColor(candidateData.averages.newAvg);
           console.log("------------------------------");
           console.log(tweetObject.text + " | " + sentiment + " | " + score);
+          //var tweetData = {candidate: candidate, tweet: tweetObject, positive: resp.body.positive, negative: resp.body.negative, aggregate: resp.body.aggregate, rgbInstantaneous: rgbInstantaneous, rgbAverage: rgbAverage, average: candidateData.averages.newAvg, averageWindow1: candidateData.runningAverageWindow1, n: candidateData.n, nNeutral: candidateData.nNeutral, nNegative: candidateData.nNegative, nPositive: candidateData.nPositive};
           var tweetData = {candidate: candidate, tweet: tweetObject, positive: resp.body.positive, negative: resp.body.negative, aggregate: resp.body.aggregate, rgbInstantaneous: rgbInstantaneous, rgbAverage: rgbAverage, average: candidateData.averages.newAvg, averageWindow1: candidateData.runningAverageWindow1, n: candidateData.n, nNeutral: candidateData.nNeutral, nNegative: candidateData.nNegative, nPositive: candidateData.nPositive};
           io.emit('message', tweetData);
           var data2 = {
@@ -274,7 +335,7 @@ function twitterStream(candidate, candidateData, tweetObject) {
               document: [{
                 title: candidate + candidateData.n,
                 content: tweetObject.text,
-                candidate: candidate, tweet: tweetObject, positive: resp.body.positive, negative: resp.body.negative, aggregate: resp.body.aggregate, rgbInstantaneous: rgbInstantaneous, rgbAverage: rgbAverage, average: candidateData.averages.newAvg, averageWindow1: candidateData.runningAverageWindow1, n: candidateData.n, nNeutral: candidateData.nNeutral, nNegative: candidateData.nNegative, nPositive: candidateData.nPositive,
+                candidate: candidate, tweet: tweetObject, positive: resp.body.positive, negative: resp.body.negative, aggregate: resp.body.aggregate, rgbInstantaneous: rgbInstantaneous, rgbAverage: rgbAverage, average: Article.averages.newAvg, averageWindow1: candidateData.runningAverageWindow1, n: candidateData.n, nNeutral: candidateData.nNeutral, nNegative: candidateData.nNegative, nPositive: candidateData.nPositive,
                 score: score,
                 date: Date.now()
               }]

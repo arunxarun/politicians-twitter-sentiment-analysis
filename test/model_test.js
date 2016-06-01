@@ -1,4 +1,5 @@
 //var expect = chai.expect; // we are using the "expect" style of Chai
+//require('dotenv').load();
 var mongoose = require('mongoose');
 var chai = require('chai');
 var expect = chai.expect;
@@ -7,22 +8,30 @@ var assert = chai.assert;
 var mongo_host = process.env.MONGO_HOST;
 var mongo_port = process.env.MONGO_PORT;
 var mongo_db = process.env.MONGO_DB;
+var conn_str = "mongodb://"+mongo_host+":"+mongo_port+"/"+mongo_db;
 
-mongoose.connect("mongodb://192.168.99.100:27017/db");
+//mongoose.connect(conn_str);
+ mongoose.connect("mongodb://192.168.99.100:27017/db");
 var models = require('../model.js')(mongoose);
 
 var PoliticianSentiment = models.PoliticianSentiment;
 var PoliticianArticleCollection = models.PoliticianArticleCollection;
 var Article = models.Article;
 var Concept = models.Concept;
+
+var datastructs  = require('../datastructs.js')(models);
+
+var buildCandidateSentimentList = datastructs.buildCandidateSentimentList;
+
 // This agent refers to PORT where program is runninng.
 
-PoliticianSentiment.remove({}, function(err) {
-  if(err) {
-    console.log(err);
-  }
 
-});
+// PoliticianSentiment.remove({}, function(err) {
+//   if(err) {
+//     console.log(err);
+//   }
+//
+// });
 
 describe("candidate sentiment data",function(){
   var foundCandidate = null;
@@ -181,7 +190,7 @@ describe("candidate article data", function() {
     foundArticle.articles.set(0,article)
     foundArticle.concepts.set(0,concept);
     foundArticle.save();
-    
+
 
     PoliticianArticleCollection.find({twitterHandle: 'bsanders'}, function(err, articles){
       if(err){
@@ -219,3 +228,40 @@ describe("candidate article data", function() {
     });
   });
 });
+
+
+describe("candidate sentiment data",function(){
+  var foundCandidate = null;
+  it("should retrieve candidate sentiment data given input map",function(done){
+    var candidateData = {
+      "SenSanders":"Bernie Sanders",
+      "HillaryClinton":"Hillary Clinton",
+      "realDonaldTrump": "Donald Trump",
+      "tedcruz": "Ted Cruz",
+      "JohnKasich":"John Kasich"
+    };
+
+    buildCandidateSentimentList(candidateData,function(err,candidateSentiments){
+      if(err) {
+        console.log(err);
+        assert(err == null);
+      } else {
+        keys = Object.keys(candidateSentiments);
+        assert(keys.length == 5);
+        for( i = 0; i < keys.length;i++) {
+          assert(candidateSentiments[keys[i]]['twitterHandle'] == keys[i]);
+        }
+        done();
+      }
+    });
+
+    PoliticianArticleCollection.remove({}, function(err){
+      if(err) console.log(err);
+
+    });
+
+
+  });
+});
+//
+//mongoose.disconnect();
